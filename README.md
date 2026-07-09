@@ -17,6 +17,8 @@ dogfoods the full acme-parts-cloud stack:
 > **All data is synthetic.** All image names, digests, and package versions in samples
 > are fabricated. No real registry or production infrastructure is used.
 
+<p align="center"><img src="demo/demo.gif" alt="Bundling wheels offline and catching a corrupted transfer with checksums" width="820"></p>
+
 ---
 
 ## Workflow
