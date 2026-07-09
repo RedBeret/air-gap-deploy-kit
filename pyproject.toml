@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "air-gap-deploy-kit"
+version = "1.0.0"
+description = "Air-gapped deployment toolkit for the acme-parts-cloud stack"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1,<9",
+    "rich>=13.7,<14",
+    "httpx>=0.27,<1",
+]
+
+[project.scripts]
+kit = "kit.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kit*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
