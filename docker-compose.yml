@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: acme
+      POSTGRES_PASSWORD: acme
+      POSTGRES_DB: acme
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acme"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    image: redberet/acme-parts-cloud:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://acme:acme@db:5432/acme
+      SEED: 42
+      MESSINESS: medium
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Ollama for rag-eval-bench generation scoring
+  # Uncomment if bundling models with kit bundle --models gemma:2b
+  #
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ./kit-bundle/models:/root/.ollama/models/blobs:ro
