@@ -149,7 +149,7 @@ loading. Docker tar loading is skipped unless `--load-docker` is explicitly supp
 ```
 --acme-url URL          acme-parts-cloud base URL (default: http://localhost:8000)
 --ollama-url URL        Ollama base URL (default: http://localhost:11434)
---ollama-model TEXT     Model to check for (default: gemma:2b)
+--ollama-model TEXT     Optional model check (default: gemma3:4b)
 --report PATH           Save JSON report
 ```
 
@@ -166,9 +166,9 @@ kit-bundle/
     redberet_acme-parts-cloud_latest.tar
     postgres_16-alpine.tar
   wheels/
-    fde_data_forge-1.0.0-py3-none-any.whl
-    rag_eval_bench-1.0.0-py3-none-any.whl
-    air_gap_deploy_kit-1.0.0-py3-none-any.whl
+    fde_data_forge-1.1.0-py3-none-any.whl
+    rag_eval_bench-1.1.0-py3-none-any.whl
+    air_gap_deploy_kit-1.1.0-py3-none-any.whl
     ...dependencies...
   docker-compose.yml      — only when supplied with --compose-file
 ```

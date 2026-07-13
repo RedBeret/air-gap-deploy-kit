@@ -35,7 +35,7 @@ from kit.report.install_doc import write_install_doc
 
 console = Console()
 
-KIT_VERSION = "1.0.0"
+KIT_VERSION = "1.1.0"
 
 
 @click.group()
