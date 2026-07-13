@@ -7,11 +7,9 @@ from pathlib import Path
 
 from kit.bundle.manifest import DockerEntry
 
-# Default stack images (dogfooding acme-parts-cloud)
-DEFAULT_IMAGES = [
-    "redberet/acme-parts-cloud:latest",
-    "postgres:16-alpine",
-]
+# Images are explicit inputs. A default tag that is not present locally makes
+# an offline bundle command fail before it can produce anything useful.
+DEFAULT_IMAGES: list[str] = []
 
 
 def _run(cmd: list[str], *, runner=None) -> str:

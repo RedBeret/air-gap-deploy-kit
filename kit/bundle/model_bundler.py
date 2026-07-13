@@ -13,8 +13,8 @@ from kit.bundle.manifest import ModelEntry
 # Default Ollama base URL
 OLLAMA_BASE_URL = "http://localhost:11434"
 
-# Default model (dogfooding rag-eval-bench Ollama integration)
-DEFAULT_MODELS = ["gemma:2b"]
+# Models are explicit inputs until manifest-aware export and restore is supported.
+DEFAULT_MODELS: list[str] = []
 
 
 def _ollama_get(path: str, base_url: str = OLLAMA_BASE_URL, *, client=None) -> dict:
