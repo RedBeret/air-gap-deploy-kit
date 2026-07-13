@@ -225,9 +225,10 @@ Stack Verification
  acme-parts-cloud   ✓ OK     GET /admin/healthz → 200 ok
  fde-data-forge     ✓ OK     fde --help exit 0: Usage: fde [OPTIONS]...
  rag-eval-bench     ✓ OK     rag-eval --help exit 0: Usage: rag-eval [OPTIONS]...
- ollama             ✗ WARN   optional service unavailable; model export is disabled
+ ollama             ✗ FAIL   Ollama unavailable or requested model not found
 
 3/4 checks passed. Ollama-only failure is reported as a warning.
+⚠ Ollama check failed — generation scoring unavailable.
 ```
 
 ---
