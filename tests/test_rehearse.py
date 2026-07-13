@@ -1,6 +1,13 @@
 """Fail-closed offline rehearsal tests with an injected Docker runner."""
 
-from kit.bundle.manifest import BundleManifest, DockerEntry, WheelEntry, save_manifest, sha256_file
+from kit.bundle.manifest import (
+    BundleManifest,
+    DockerEntry,
+    WheelEntry,
+    load_manifest,
+    save_manifest,
+    sha256_file,
+)
 from kit.rehearse.rehearser import rehearse_bundle
 
 
@@ -86,6 +93,22 @@ def test_opt_in_docker_load_verifies_image_id(tmp_path):
     assert any(call[:2] == ["docker", "load"] for call in runner.calls)
     assert results[-1].success
     assert "image ID verified" in results[-1].detail
+
+
+def test_docker_load_failure_stops_before_later_host_mutation(tmp_path):
+    _bundle(tmp_path, with_docker=True)
+    docker = tmp_path / "docker"
+    (docker / "second.tar").write_bytes(b"second")
+    manifest = load_manifest(tmp_path)
+    manifest.docker.append(DockerEntry("second:latest", "sha256:second", "second.tar"))
+    save_manifest(manifest, tmp_path)
+    runner = Runner(failures=("docker load",))
+
+    results = rehearse_bundle(tmp_path, load_docker=True, runner=runner)
+
+    loads = [call for call in runner.calls if call[:2] == ["docker", "load"]]
+    assert len(loads) == 1
+    assert not results[-1].success
 
 
 def test_cleanup_failure_fails_rehearsal(tmp_path):

@@ -72,7 +72,7 @@ def _load_docker_tars(manifest: BundleManifest, bundle_dir: Path, *, runner=None
         ok, output = _run(["docker", "load", "-i", str(tar)], runner=runner)
         if not ok:
             results.append(RehearseResult(f"docker load: {entry.image}", False, output))
-            continue
+            return results
         verified, digest = _run(
             ["docker", "inspect", "--format={{.Id}}", entry.image], runner=runner
         )
@@ -86,6 +86,8 @@ def _load_docker_tars(manifest: BundleManifest, bundle_dir: Path, *, runner=None
                 else f"post-load image ID mismatch: {digest.strip()}",
             )
         )
+        if not matches:
+            return results
     return results
 
 

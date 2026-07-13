@@ -125,6 +125,11 @@ usable models. `--models` fails clearly instead of creating a broken bundle.
 ### deploy flags
 
 ```
+--bundle-dir DIR        Path to bundle directory (default: ./kit-bundle)
+--skip-docker           Skip docker load step
+--skip-wheels           Skip pip install step
+--report PATH           Save JSON report
+```
 
 ### rehearse flags
 
@@ -138,11 +143,6 @@ usable models. `--models` fails clearly instead of creating a broken bundle.
 `rehearse` uses `docker run --pull=never --network none`; the image must already exist
 locally. Any integrity or wheel-install failure stops before smoke commands or host image
 loading. Docker tar loading is skipped unless `--load-docker` is explicitly supplied.
---bundle-dir DIR        Path to bundle directory (default: ./kit-bundle)
---skip-docker           Skip docker load step
---skip-wheels           Skip pip install step
---report PATH           Save JSON report
-```
 
 ### verify flags
 
