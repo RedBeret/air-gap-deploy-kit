@@ -227,7 +227,7 @@ Stack Verification
  rag-eval-bench     ✓ OK     rag-eval --help exit 0: Usage: rag-eval [OPTIONS]...
  ollama             ✗ FAIL   Ollama unavailable or requested model not found
 
-3/4 checks passed. Ollama-only failure is reported as a warning.
+3/4 checks passed.
 ⚠ Ollama check failed — generation scoring unavailable.
 ```
 
