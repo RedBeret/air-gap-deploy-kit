@@ -79,7 +79,7 @@ def cli() -> None:
     multiple=True,
     default=DEFAULT_MODELS,
     show_default=True,
-    help="Ollama models to bundle (repeatable).",
+    help="Unsupported until restorable Ollama manifests can be exported.",
 )
 @click.option(
     "--compose-file",
@@ -89,7 +89,12 @@ def cli() -> None:
 )
 @click.option("--skip-docker", is_flag=True, default=False, help="Skip Docker image bundling.")
 @click.option("--skip-wheels", is_flag=True, default=False, help="Skip Python wheel bundling.")
-@click.option("--skip-models", is_flag=True, default=False, help="Skip Ollama model bundling.")
+@click.option(
+    "--skip-models",
+    is_flag=True,
+    default=False,
+    help="Deprecated compatibility flag; model export is disabled.",
+)
 def bundle_cmd(
     output_dir: str,
     images: tuple[str, ...],
@@ -101,7 +106,7 @@ def bundle_cmd(
     skip_wheels: bool,
     skip_models: bool,
 ) -> None:
-    """Bundle Docker images, Python wheels, and Ollama models for offline transfer."""
+    """Bundle explicit Docker images and Python wheels for offline transfer."""
     if models and not skip_models:
         raise click.ClickException(
             "Ollama model export is disabled: copying blobs without model manifests "

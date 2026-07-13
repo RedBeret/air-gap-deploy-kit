@@ -35,6 +35,7 @@ def test_bundle_contains_standalone_verifier_and_install_guide(tmp_path):
     manifest = json.loads((bundle / "manifest.json").read_text())
     assert "VERIFY_BUNDLE.py" in manifest["file_checksums"]
     assert "INSTALL_OFFLINE.md" in manifest["file_checksums"]
+    assert "read_bytes" not in (bundle / "VERIFY_BUNDLE.py").read_text()
     verified = subprocess.run(
         ["python3", str(bundle / "VERIFY_BUNDLE.py")], capture_output=True, text=True
     )

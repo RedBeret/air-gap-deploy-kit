@@ -20,12 +20,18 @@ actual_files = {
     if path.is_file() and path.name != "manifest.json"
 }
 errors = []
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
 for relative, digest in expected.items():
     path = root / relative
     if not path.is_file():
         errors.append(f"missing: {relative}")
         continue
-    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    actual = sha256_file(path)
     if actual != digest:
         errors.append(f"checksum mismatch: {relative}")
 for relative in sorted(actual_files - set(expected)):

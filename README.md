@@ -210,6 +210,7 @@ kit verify
 # acme-parts-cloud  ✓  GET /admin/healthz → 200 ok
 # fde-data-forge    ✓  fde --help exit 0
 # rag-eval-bench    ✓  rag-eval --help exit 0
+# ollama            ⚠  optional service unavailable; model export is disabled
 ```
 
 Once Docker Compose is up, the whole offline install is one `kit deploy` and one `kit verify`, with no network calls at any step. That last part is the point: rehearse the install with networking off *before* you carry the drive on-site.
@@ -224,8 +225,9 @@ Stack Verification
  acme-parts-cloud   ✓ OK     GET /admin/healthz → 200 ok
  fde-data-forge     ✓ OK     fde --help exit 0: Usage: fde [OPTIONS]...
  rag-eval-bench     ✓ OK     rag-eval --help exit 0: Usage: rag-eval [OPTIONS]...
+ ollama             ✗ WARN   optional service unavailable; model export is disabled
 
-4/4 checks passed.
+3/4 checks passed. Ollama-only failure is reported as a warning.
 ```
 
 ---
