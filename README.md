@@ -6,15 +6,15 @@
 
 **Offline deployment toolkit for the acme-parts-cloud stack.**
 
-`air-gap-deploy-kit` packages Docker images, Python wheels, and Ollama models into a
-portable bundle directory for deployment on networks with no internet access. It
+`air-gap-deploy-kit` packages explicit Docker images and Python wheels into a
+portable, checksummed directory for deployment on networks with no internet access. It
 dogfoods the full acme-parts-cloud stack:
 
 | Component | Role in this kit |
 |-----------|-----------------|
 | [`acme-parts-cloud`](https://github.com/RedBeret/acme-parts-cloud) | Docker image bundled and verified |
 | [`fde-data-forge`](https://github.com/RedBeret/fde-data-forge) | Python wheel bundled and CLI verified |
-| [`rag-eval-bench`](https://github.com/RedBeret/rag-eval-bench) | Python wheel + Ollama model bundled and CLI verified |
+| [`rag-eval-bench`](https://github.com/RedBeret/rag-eval-bench) | Python wheel bundled and CLI verified |
 
 > **All data is synthetic.** All image names, digests, and package versions in samples
 > are fabricated. No real registry or production infrastructure is used.
@@ -28,7 +28,7 @@ dogfoods the full acme-parts-cloud stack:
 ```mermaid
 flowchart LR
     subgraph Connected["Internet-connected machine"]
-        A[kit bundle] --> B[kit-bundle/<br>docker/ · wheels/ · models/<br>manifest.json]
+        A[kit bundle] --> B[kit-bundle/<br>docker/ · wheels/<br>manifest · verifier · guide]
     end
     B -->|USB · internal transfer| C
 
@@ -72,7 +72,7 @@ kit bundle --output-dir ./kit-bundle \
   --wheel-source ./wheelhouse \
   --images acme-parts-cloud:v1.0.0 \
   --images postgres:16-alpine \
-  --skip-models
+  --compose-file docker-compose.yml
 
 # 3. Transfer kit-bundle/ to the air-gapped machine
 
@@ -97,11 +97,11 @@ kit verify --report ./deploy-report.json
 
 | Command | Description |
 |---------|-------------|
-| `kit bundle` | Pull images + wheels + models into a bundle directory |
+| `kit bundle` | Collect explicit images and wheels into a bundle directory |
 | `kit deploy` | Install from bundle (no internet required) |
 | `kit verify` | Smoke-test each stack component |
 | `kit manifest` | Display the manifest for an existing bundle |
-| `kit manifest --check` | Recompute bundle checksums and fail on tampering |
+| `kit manifest --check` | Recompute checksums and detect transfer corruption |
 
 ### bundle flags
 
@@ -110,11 +110,13 @@ kit verify --report ./deploy-report.json
 --images TEXT           Docker images to bundle (repeatable)
 --packages TEXT         Python packages to bundle (repeatable)
 --wheel-source PATH     Prebuilt wheel or wheelhouse directory (repeatable)
---models TEXT           Ollama models to bundle (repeatable)
+--compose-file PATH     Compose file to include and checksum
 --skip-docker           Skip Docker image bundling
---skip-wheels           Skip Python wheel download
---skip-models           Skip Ollama model copy
+--skip-wheels           Skip Python wheel collection
 ```
+
+Ollama model export is disabled: blobs without Ollama manifests cannot be restored as
+usable models. `--models` fails clearly instead of creating a broken bundle.
 
 ### deploy flags
 
@@ -141,6 +143,8 @@ kit verify --report ./deploy-report.json
 ```
 kit-bundle/
   manifest.json           — digest, checksum, and metadata index
+  VERIFY_BUNDLE.py        — dependency-free check run before installation
+  INSTALL_OFFLINE.md      — component-aware field guide
   docker/
     redberet_acme-parts-cloud_latest.tar
     postgres_16-alpine.tar
@@ -149,17 +153,16 @@ kit-bundle/
     rag_eval_bench-1.0.0-py3-none-any.whl
     air_gap_deploy_kit-1.0.0-py3-none-any.whl
     ...dependencies...
-  models/
-    gemma_2b/
-      sha256-...
-      sha256-...
+  docker-compose.yml      — only when supplied with --compose-file
 ```
 
 See `samples/bundle_manifest_sample.json` for a full manifest example.
 
 Every regular file in the bundle is recorded in `manifest.json` under
 `file_checksums`. Run `kit manifest --check --bundle-dir ./kit-bundle` after transfer to
-catch missing files or a corrupted copy before deploying.
+catch missing, changed, unexpected or corrupted files before deploying. These unsigned
+checksums do not authenticate the bundle; compare its manifest digest through a separate
+trusted channel when malicious replacement is in scope.
 
 ---
 
@@ -182,7 +185,7 @@ kit bundle --output-dir ./kit-bundle \
   --wheel-source ./wheelhouse \
   --images acme-parts-cloud:v1.0.0 \
   --images postgres:16-alpine \
-  --skip-models
+  --compose-file docker-compose.yml
 ```
 
 **Transfer to lab (USB drive):**
@@ -207,7 +210,7 @@ kit verify
 # acme-parts-cloud  ✓  GET /admin/healthz → 200 ok
 # fde-data-forge    ✓  fde --help exit 0
 # rag-eval-bench    ✓  rag-eval --help exit 0
-# ollama            ✓  Ollama running; gemma:2b available
+# ollama            ⚠  optional service unavailable; model export is disabled
 ```
 
 Once Docker Compose is up, the whole offline install is one `kit deploy` and one `kit verify`, with no network calls at any step. That last part is the point: rehearse the install with networking off *before* you carry the drive on-site.
@@ -222,9 +225,10 @@ Stack Verification
  acme-parts-cloud   ✓ OK     GET /admin/healthz → 200 ok
  fde-data-forge     ✓ OK     fde --help exit 0: Usage: fde [OPTIONS]...
  rag-eval-bench     ✓ OK     rag-eval --help exit 0: Usage: rag-eval [OPTIONS]...
- ollama             ✓ OK     Ollama running; gemma:2b available as gemma:2b
+ ollama             ✗ FAIL   Ollama unavailable or requested model not found
 
-4/4 checks passed.
+3/4 checks passed.
+⚠ Ollama check failed — generation scoring unavailable.
 ```
 
 ---
@@ -233,7 +237,7 @@ Stack Verification
 
 ```
 kit/
-  bundle/   — docker, wheel, model bundlers + manifest I/O
+  bundle/   — docker and wheel bundlers + manifest I/O
   deploy/   — offline installer + stack verifier
   report/   — rich terminal tables + JSON report builder
   cli.py    — click entry point
