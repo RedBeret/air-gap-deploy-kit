@@ -66,6 +66,12 @@ def cli() -> None:
     help="Python packages to bundle (repeatable).",
 )
 @click.option(
+    "--wheel-source",
+    multiple=True,
+    type=click.Path(exists=True, path_type=Path),
+    help="Prebuilt wheel file or wheelhouse directory (repeatable).",
+)
+@click.option(
     "--models",
     multiple=True,
     default=DEFAULT_MODELS,
@@ -79,12 +85,23 @@ def bundle_cmd(
     output_dir: str,
     images: tuple[str, ...],
     packages: tuple[str, ...],
+    wheel_source: tuple[Path, ...],
     models: tuple[str, ...],
     skip_docker: bool,
     skip_wheels: bool,
     skip_models: bool,
 ) -> None:
     """Bundle Docker images, Python wheels, and Ollama models for offline transfer."""
+    selected = (
+        ([] if skip_docker else list(images))
+        + ([] if skip_wheels else [*packages, *(str(path) for path in wheel_source)])
+        + ([] if skip_models else list(models))
+    )
+    if not selected:
+        raise click.ClickException(
+            "No bundle inputs selected. Pass --images, --packages, or --wheel-source."
+        )
+
     bundle_dir = Path(output_dir)
     bundle_dir.mkdir(parents=True, exist_ok=True)
 
@@ -93,7 +110,7 @@ def bundle_cmd(
 
     manifest = BundleManifest(
         kit_version=KIT_VERSION,
-        created_at=datetime.datetime.utcnow().isoformat() + "Z",
+        created_at=datetime.datetime.now(datetime.UTC).isoformat().replace("+00:00", "Z"),
         platform=platform.machine(),
     )
 
@@ -109,7 +126,9 @@ def bundle_cmd(
     if not skip_wheels:
         console.print("[cyan]→ Downloading Python wheels…[/cyan]")
         try:
-            manifest.wheels = download_wheels(list(packages), bundle_dir)
+            manifest.wheels = download_wheels(
+                list(packages), bundle_dir, wheel_sources=list(wheel_source)
+            )
             console.print(f"  [green]✓[/green] {len(manifest.wheels)} wheel(s) downloaded")
         except Exception as exc:
             console.print(f"  [red]✗ Wheel download failed: {exc}[/red]")

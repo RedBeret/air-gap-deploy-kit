@@ -95,8 +95,9 @@ def test_download_wheels_returns_entries_for_existing_wheels():
 
         entries = download_wheels(["fde-data-forge"], bundle_dir, runner=fake_runner)
 
-        # pip download should have been called
-        assert any("pip" in cmd[0] for cmd in call_log)
+        # pip download should have been called for the explicit package.
+        assert any("pip" in cmd for cmd in call_log)
+        assert "3.12" in call_log[0]
         # Entry should reflect the pre-existing wheel
         assert len(entries) == 1
         assert entries[0].filename == "fde_data_forge-1.0.0-py3-none-any.whl"
@@ -116,3 +117,27 @@ def test_download_wheels_records_checksum():
         entries = download_wheels(["mypackage"], bundle_dir, runner=lambda cmd: "")
 
         assert entries[0].sha256 == expected_sha
+
+
+def test_local_wheelhouse_is_copied_without_pip(tmp_path: Path):
+    source = tmp_path / "wheelhouse"
+    source.mkdir()
+    wheel = source / "fde_data_forge-1.1.0-py3-none-any.whl"
+    wheel.write_bytes(b"local wheel")
+    bundle = tmp_path / "bundle"
+    calls: list[list[str]] = []
+
+    entries = download_wheels([], bundle, wheel_sources=[source], runner=calls.append)
+
+    assert calls == []
+    assert [entry.filename for entry in entries] == [wheel.name]
+    assert (bundle / "wheels" / wheel.name).read_bytes() == b"local wheel"
+
+
+def test_empty_local_wheelhouse_is_rejected(tmp_path: Path):
+    import pytest
+
+    source = tmp_path / "empty"
+    source.mkdir()
+    with pytest.raises(ValueError, match="No wheel files"):
+        download_wheels([], tmp_path / "bundle", wheel_sources=[source])
