@@ -55,12 +55,29 @@ pip install -e .
 
 # (Windows) run.bat sets up the venv
 
-# 1. Bundle the stack
-kit bundle --output-dir ./kit-bundle
+# Clone the two sibling projects used by this portfolio stack
+git clone https://github.com/RedBeret/fde-data-forge.git ../fde-data-forge
+git clone https://github.com/RedBeret/rag-eval-bench.git ../rag-eval-bench
+git clone https://github.com/RedBeret/acme-parts-cloud.git ../acme-parts-cloud
 
-# 2. Transfer kit-bundle/ to air-gapped machine (USB, internal network, etc.)
+docker build -t acme-parts-cloud:v1.0.0 ../acme-parts-cloud
+docker pull postgres:16-alpine
 
-# 3. On the air-gapped machine — deploy from bundle
+# 1. Build the local projects and dependencies into a real wheelhouse
+python -m pip wheel --wheel-dir ./wheelhouse \
+  . ../fde-data-forge ../rag-eval-bench
+
+# 2. Bundle explicit local artifacts (no unpublished PyPI names are assumed)
+kit bundle --output-dir ./kit-bundle \
+  --wheel-source ./wheelhouse \
+  --images acme-parts-cloud:v1.0.0 \
+  --images postgres:16-alpine \
+  --skip-models
+
+# 3. Transfer kit-bundle/ to the air-gapped machine
+
+# 4. Bootstrap kit from the bundle, then deploy
+python -m pip install --no-index --find-links ./kit-bundle/wheels air-gap-deploy-kit
 kit deploy --bundle-dir ./kit-bundle
 
 # 4. Start acme-parts-cloud (Docker Compose or manual docker run)
@@ -92,6 +109,7 @@ kit verify --report ./deploy-report.json
 --output-dir DIR        Bundle output directory (default: ./kit-bundle)
 --images TEXT           Docker images to bundle (repeatable)
 --packages TEXT         Python packages to bundle (repeatable)
+--wheel-source PATH     Prebuilt wheel or wheelhouse directory (repeatable)
 --models TEXT           Ollama models to bundle (repeatable)
 --skip-docker           Skip Docker image bundling
 --skip-wheels           Skip Python wheel download
@@ -153,15 +171,18 @@ catch missing files or a corrupted copy before deploying.
 **On the build machine (internet access):**
 
 ```bash
-# Pull everything needed
-docker pull redberet/acme-parts-cloud:latest
+# Build or pull everything needed
+docker build -t acme-parts-cloud:v1.0.0 ../acme-parts-cloud
 docker pull postgres:16-alpine
-pip install fde-data-forge rag-eval-bench  # ensure local wheels exist
-ollama pull gemma:2b
+python -m pip wheel --wheel-dir ./wheelhouse \
+  . ../fde-data-forge ../rag-eval-bench
 
 # Bundle
-kit bundle --output-dir ./kit-bundle
-# → 3 docker tars, 12 wheels, gemma:2b blobs, manifest.json
+kit bundle --output-dir ./kit-bundle \
+  --wheel-source ./wheelhouse \
+  --images acme-parts-cloud:v1.0.0 \
+  --images postgres:16-alpine \
+  --skip-models
 ```
 
 **Transfer to lab (USB drive):**
@@ -174,7 +195,8 @@ cp -r ./kit-bundle /media/usb/
 **On the lab machine (no internet):**
 
 ```bash
-pip install -e ./air-gap-deploy-kit  # kit is on the USB too
+python -m pip install --no-index --find-links /media/usb/kit-bundle/wheels \
+  air-gap-deploy-kit
 kit deploy --bundle-dir /media/usb/kit-bundle
 # → docker load: 2 images loaded
 # → pip install --no-index: 12 wheels installed
