@@ -74,6 +74,9 @@ kit bundle --output-dir ./kit-bundle \
   --images postgres:16-alpine \
   --compose-file docker-compose.yml
 
+# Prove the wheel install with no image pull and no container network
+kit rehearse --bundle-dir ./kit-bundle
+
 # 3. Transfer kit-bundle/ to the air-gapped machine
 
 # 4. Bootstrap kit from the bundle, then deploy
@@ -99,6 +102,7 @@ kit verify --report ./deploy-report.json
 |---------|-------------|
 | `kit bundle` | Collect explicit images and wheels into a bundle directory |
 | `kit deploy` | Install from bundle (no internet required) |
+| `kit rehearse` | Install wheels in a network-isolated throwaway container |
 | `kit verify` | Smoke-test each stack component |
 | `kit manifest` | Display the manifest for an existing bundle |
 | `kit manifest --check` | Recompute checksums and detect transfer corruption |
@@ -121,6 +125,19 @@ usable models. `--models` fails clearly instead of creating a broken bundle.
 ### deploy flags
 
 ```
+
+### rehearse flags
+
+```
+--bundle-dir DIR        Bundle to verify and rehearse
+--image TEXT            Preloaded Python image (default: python:3.12-slim)
+--smoke TEXT            Post-install command (repeatable)
+--load-docker           Explicitly load Docker tars into the host and verify image IDs
+```
+
+`rehearse` uses `docker run --pull=never --network none`; the image must already exist
+locally. Any integrity or wheel-install failure stops before smoke commands or host image
+loading. Docker tar loading is skipped unless `--load-docker` is explicitly supplied.
 --bundle-dir DIR        Path to bundle directory (default: ./kit-bundle)
 --skip-docker           Skip docker load step
 --skip-wheels           Skip pip install step
@@ -239,12 +256,15 @@ Stack Verification
 kit/
   bundle/   — docker and wheel bundlers + manifest I/O
   deploy/   — offline installer + stack verifier
+  rehearse/ — fail-closed, network-isolated install rehearsal
   report/   — rich terminal tables + JSON report builder
   cli.py    — click entry point
 tests/
   test_manifest.py   — 8 tests
   test_bundle.py     — 5 tests
   test_verifier.py   — 9 tests
+  test_rehearse.py   — injected-runner offline and fail-closed behavior
+  test_rehearse_docker.py — live test only when the image is already present
 samples/
   bundle_manifest_sample.json
 ```

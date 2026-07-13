@@ -94,3 +94,16 @@ be started before running `kit verify`. The kit does not start Docker containers
 remains a manual step or is handled by your orchestrator (Docker Compose, systemd, etc.).
 
 A future version may add `kit start` and `kit stop` commands wrapping `docker compose`.
+
+---
+
+## 9. Rehearsal Never Pulls Images
+
+`kit rehearse` starts its container with both `--pull=never` and `--network none`.
+The selected image must already be present on the rehearsal host. This makes a missing
+prerequisite fail visibly instead of silently using the network.
+
+Integrity checks fail closed before wheel installation or smoke commands. Docker image
+tars are not loaded during the default rehearsal because that mutates the host daemon.
+Passing `--load-docker` opts into that mutation and adds a post-load image-ID check.
+Container cleanup failure is itself a failed rehearsal step.
