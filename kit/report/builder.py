@@ -11,6 +11,7 @@ from rich.table import Table
 from kit.bundle.manifest import BundleManifest
 from kit.deploy.installer import InstallResult
 from kit.deploy.verifier import VerifyResult
+from kit.rehearse.rehearser import RehearseResult
 
 console = Console()
 
@@ -85,6 +86,19 @@ def print_verify_results(results: list[VerifyResult]) -> None:
     total = len(results)
     color = "green" if passed == total else "yellow" if passed > 0 else "red"
     console.print(f"\n[{color}]{passed}/{total} checks passed.[/{color}]")
+
+
+def print_rehearse_results(results: list[RehearseResult]) -> None:
+    """Print rehearsal outcomes without hiding skipped or cleanup steps."""
+    console.print("\n[bold cyan]Offline Install Rehearsal[/bold cyan]")
+    table = Table(show_lines=False)
+    table.add_column("Step", style="cyan")
+    table.add_column("Status")
+    table.add_column("Detail")
+    for result in results:
+        status = "[green]✓ OK[/green]" if result.success else "[red]✗ FAIL[/red]"
+        table.add_row(result.step, status, result.detail)
+    console.print(table)
 
 
 def save_report(
