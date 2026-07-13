@@ -80,14 +80,14 @@ kit bundle --output-dir ./kit-bundle \
 python -m pip install --no-index --find-links ./kit-bundle/wheels air-gap-deploy-kit
 kit deploy --bundle-dir ./kit-bundle
 
-# 4. Start acme-parts-cloud (Docker Compose or manual docker run)
+# 5. Start acme-parts-cloud (Docker Compose or manual docker run)
 # docker load already done by kit deploy — start as normal:
 # docker compose up -d
 
-# 5. Verify the stack
+# 6. Verify the stack
 kit verify
 
-# 6. Optional: save a JSON report
+# 7. Optional: save a JSON report
 kit verify --report ./deploy-report.json
 ```
 
