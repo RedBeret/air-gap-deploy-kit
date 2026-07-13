@@ -42,6 +42,7 @@ class BundleManifest:
     docker: list[DockerEntry] = field(default_factory=list)
     wheels: list[WheelEntry] = field(default_factory=list)
     models: list[ModelEntry] = field(default_factory=list)
+    compose_file: str | None = None
     file_checksums: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -65,6 +66,7 @@ class BundleManifest:
                 }
                 for e in self.models
             ],
+            "compose_file": self.compose_file,
             "file_checksums": self.file_checksums,
         }
 
@@ -91,6 +93,7 @@ class BundleManifest:
                 )
                 for e in d.get("models", [])
             ],
+            compose_file=d.get("compose_file"),
             file_checksums=d.get("file_checksums", {}),
         )
 
@@ -154,6 +157,13 @@ def verify_file_checksums(manifest: BundleManifest, bundle_dir: Path) -> list[st
             errors.append(
                 f"Checksum mismatch for {rel}: expected {expected[:12]}... got {actual[:12]}..."
             )
+    actual_files = {
+        path.relative_to(bundle_dir).as_posix()
+        for path in bundle_dir.rglob("*")
+        if path.is_file() and path.name != "manifest.json"
+    }
+    for rel in sorted(actual_files - set(manifest.file_checksums)):
+        errors.append(f"Unexpected bundle file: {rel}")
     return errors
 
 

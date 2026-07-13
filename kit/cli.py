@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import platform
+import shutil
 import sys
 from pathlib import Path
 
@@ -18,16 +19,18 @@ from kit.bundle.manifest import (
     verify_file_checksums,
     verify_wheel_checksums,
 )
-from kit.bundle.model_bundler import DEFAULT_MODELS, bundle_models
+from kit.bundle.model_bundler import DEFAULT_MODELS
 from kit.bundle.wheel_bundler import DEFAULT_PACKAGES, download_wheels
 from kit.deploy.installer import install_from_bundle
 from kit.deploy.verifier import verify_stack
+from kit.report.bootstrap import write_bootstrap_verifier
 from kit.report.builder import (
     print_install_results,
     print_manifest_summary,
     print_verify_results,
     save_report,
 )
+from kit.report.install_doc import write_install_doc
 
 console = Console()
 
@@ -78,6 +81,12 @@ def cli() -> None:
     show_default=True,
     help="Ollama models to bundle (repeatable).",
 )
+@click.option(
+    "--compose-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Compose file to include and checksum inside the bundle.",
+)
 @click.option("--skip-docker", is_flag=True, default=False, help="Skip Docker image bundling.")
 @click.option("--skip-wheels", is_flag=True, default=False, help="Skip Python wheel bundling.")
 @click.option("--skip-models", is_flag=True, default=False, help="Skip Ollama model bundling.")
@@ -87,15 +96,21 @@ def bundle_cmd(
     packages: tuple[str, ...],
     wheel_source: tuple[Path, ...],
     models: tuple[str, ...],
+    compose_file: Path | None,
     skip_docker: bool,
     skip_wheels: bool,
     skip_models: bool,
 ) -> None:
     """Bundle Docker images, Python wheels, and Ollama models for offline transfer."""
+    if models and not skip_models:
+        raise click.ClickException(
+            "Ollama model export is disabled: copying blobs without model manifests "
+            "cannot produce a restorable model."
+        )
     selected = (
         ([] if skip_docker else list(images))
         + ([] if skip_wheels else [*packages, *(str(path) for path in wheel_source)])
-        + ([] if skip_models else list(models))
+        + ([str(compose_file)] if compose_file else [])
     )
     if not selected:
         raise click.ClickException(
@@ -134,19 +149,22 @@ def bundle_cmd(
             console.print(f"  [red]✗ Wheel download failed: {exc}[/red]")
             sys.exit(1)
 
-    if not skip_models:
-        console.print("[cyan]→ Bundling Ollama models…[/cyan]")
-        manifest.models = bundle_models(list(models), bundle_dir)
-        available = [m for m in manifest.models if m.manifest_digest != "unavailable"]
-        skipped = [m for m in manifest.models if m.manifest_digest == "unavailable"]
-        if available:
-            console.print(f"  [green]✓[/green] {len(available)} model(s) copied")
-        if skipped:
-            console.print(
-                f"  [yellow]⚠[/yellow] {len(skipped)} model(s) skipped "
-                "(Ollama not running or model not pulled)"
-            )
+    bundled_names = {
+        entry.package.split("==", 1)[0].replace("_", "-").lower() for entry in manifest.wheels
+    }
+    if "air-gap-deploy-kit" not in bundled_names:
+        raise click.ClickException(
+            "The bundle wheelhouse must include air-gap-deploy-kit so the target can "
+            "bootstrap kit without source code or network access."
+        )
 
+    if compose_file:
+        destination = bundle_dir / "docker-compose.yml"
+        shutil.copy2(compose_file, destination)
+        manifest.compose_file = destination.name
+
+    write_bootstrap_verifier(bundle_dir)
+    write_install_doc(manifest, bundle_dir)
     path = save_manifest(manifest, bundle_dir)
     console.print(f"\n[green]✓ Bundle ready:[/green] {bundle_dir.resolve()}")
     console.print(f"  manifest.json → {path}")
@@ -271,7 +289,7 @@ def manifest_cmd(bundle_dir: str, check: bool) -> None:
     manifest = load_manifest(bundle_path)
     print_manifest_summary(manifest)
     if check:
-        errors = verify_file_checksums(manifest, bundle_path) or verify_wheel_checksums(
+        errors = verify_file_checksums(manifest, bundle_path) + verify_wheel_checksums(
             manifest, bundle_path
         )
         if errors:
