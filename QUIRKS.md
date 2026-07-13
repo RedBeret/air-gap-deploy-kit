@@ -34,18 +34,12 @@ running `kit manifest`.
 
 ---
 
-## 3. Ollama Blob Copy Is Model-Unaware
+## 3. Ollama Model Export Is Disabled
 
-`model_bundler.py` copies all files from `~/.ollama/models/blobs/` for each model,
-not just the blobs belonging to that specific model. Ollama's blob store is a flat
-content-addressed directory (`sha256-{hex}` filenames) shared across all pulled models.
-
-**Effect:** if multiple models are pulled locally, bundling one model will include blobs
-from all models (since they share the same directory). This makes the bundle larger than
-necessary but does not break functionality.
-
-Proper fix requires parsing Ollama's manifest files to find per-model blob digests — not
-implemented in v1.0.0.
+Copying Ollama blobs alone does not recreate a usable model because model manifests are
+also required. `kit bundle --models ...` therefore fails clearly instead of shipping an
+archive the target cannot restore. A future implementation must export and restore both
+manifests and their exact referenced blobs.
 
 ---
 
