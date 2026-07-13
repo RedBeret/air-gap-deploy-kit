@@ -1,1 +1,1 @@
-"""Bundle sub-package: collect images, wheels, and models for offline transfer."""
+"""Bundle sub-package: collect explicit images and wheels for offline transfer."""

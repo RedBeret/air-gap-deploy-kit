@@ -19,7 +19,6 @@ from kit.bundle.manifest import (
     verify_file_checksums,
     verify_wheel_checksums,
 )
-from kit.bundle.model_bundler import DEFAULT_MODELS
 from kit.bundle.wheel_bundler import DEFAULT_PACKAGES, download_wheels
 from kit.deploy.installer import install_from_bundle
 from kit.deploy.verifier import verify_stack
@@ -36,10 +35,11 @@ from kit.report.install_doc import write_install_doc
 
 console = Console()
 
-KIT_VERSION = "1.0.0"
+KIT_VERSION = "1.1.0"
 
 
 @click.group()
+@click.version_option(KIT_VERSION, prog_name="kit")
 def cli() -> None:
     """air-gap-deploy-kit: offline deployment for the acme-parts-cloud stack."""
 
@@ -79,7 +79,7 @@ def cli() -> None:
 @click.option(
     "--models",
     multiple=True,
-    default=DEFAULT_MODELS,
+    default=(),
     show_default=True,
     help="Unsupported until restorable Ollama manifests can be exported.",
 )
@@ -263,7 +263,7 @@ def rehearse_cmd(bundle_dir: str, image: str, smoke: tuple[str, ...], load_docke
 )
 @click.option(
     "--ollama-model",
-    default="gemma:2b",
+    default="gemma3:4b",
     show_default=True,
     help="Ollama model to check for.",
 )

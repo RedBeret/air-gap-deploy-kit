@@ -61,8 +61,8 @@ requested one.
 matched = [p for p in pulled if p.startswith(model.split(":")[0])]
 ```
 
-This means `--ollama-model gemma` matches `gemma:2b`, `gemma:7b`, and `gemma:2b-instruct`.
-Requesting `gemma:2b` will match `gemma:2b-instruct` if that's what's pulled.
+This means `--ollama-model gemma` matches multiple Gemma-family tags. Requesting
+`gemma3:4b` may also match another `gemma3` tag if that is what is pulled.
 
 This is intentionally permissive — the exact tag varies across Ollama versions, and the
 bench cares that a gemma family model is available, not the precise quantization level.

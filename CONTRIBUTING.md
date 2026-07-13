@@ -31,18 +31,23 @@ kit/
   bundle/
     manifest.py       — BundleManifest dataclass + I/O + checksum helpers
     docker_bundler.py — docker save/inspect wrapper
-    wheel_bundler.py  — pip download wrapper
-    model_bundler.py  — Ollama blob copy
+    wheel_bundler.py  — local wheelhouse + explicit pip download wrapper
   deploy/
     installer.py      — docker load + pip install --no-index
     verifier.py       — smoke tests for each stack component
   report/
+    bootstrap.py      — dependency-free transfer verifier generator
+    install_doc.py    — component-aware offline guide generator
     builder.py        — rich terminal tables + JSON report
+  rehearse/
+    rehearser.py      — fail-closed network-isolated install rehearsal
   cli.py              — click entry point (kit command)
 tests/
   test_manifest.py
   test_bundle.py
   test_verifier.py
+  test_rehearse.py
+  test_rehearse_docker.py
 samples/
   bundle_manifest_sample.json
 ```
