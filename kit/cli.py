@@ -23,10 +23,12 @@ from kit.bundle.model_bundler import DEFAULT_MODELS
 from kit.bundle.wheel_bundler import DEFAULT_PACKAGES, download_wheels
 from kit.deploy.installer import install_from_bundle
 from kit.deploy.verifier import verify_stack
+from kit.rehearse.rehearser import DEFAULT_IMAGE, rehearse_bundle
 from kit.report.bootstrap import write_bootstrap_verifier
 from kit.report.builder import (
     print_install_results,
     print_manifest_summary,
+    print_rehearse_results,
     print_verify_results,
     save_report,
 )
@@ -219,6 +221,26 @@ def deploy_cmd(
     failed = [r for r in results if not r.success]
     if failed:
         sys.exit(1)
+
+
+@cli.command("rehearse")
+@click.option("--bundle-dir", default="./kit-bundle", show_default=True)
+@click.option("--image", default=DEFAULT_IMAGE, show_default=True)
+@click.option("--smoke", multiple=True, help="Smoke command to run after wheel installation.")
+@click.option(
+    "--load-docker",
+    is_flag=True,
+    help="Opt into loading Docker tars into the host daemon and verifying image IDs.",
+)
+def rehearse_cmd(bundle_dir: str, image: str, smoke: tuple[str, ...], load_docker: bool) -> None:
+    """Rehearse installation with image pulls and container networking disabled."""
+    path = Path(bundle_dir)
+    if not (path / "manifest.json").exists():
+        raise click.ClickException(f"No manifest.json found in {path}")
+    results = rehearse_bundle(path, image=image, smoke=smoke, load_docker=load_docker)
+    print_rehearse_results(results)
+    if any(not result.success for result in results):
+        raise click.ClickException("Rehearsal failed; fix the bundle before transfer.")
 
 
 # ---------------------------------------------------------------------------
