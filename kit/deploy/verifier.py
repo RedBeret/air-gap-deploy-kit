@@ -126,7 +126,7 @@ def check_rag_cli(*, runner=None) -> VerifyResult:
 
 def check_ollama(
     base_url: str = "http://localhost:11434",
-    model: str = "gemma:2b",
+    model: str = "gemma3:4b",
     *,
     client: httpx.Client | None = None,
 ) -> VerifyResult:
@@ -173,7 +173,7 @@ def check_ollama(
 def verify_stack(
     acme_url: str = "http://localhost:8000",
     ollama_url: str = "http://localhost:11434",
-    ollama_model: str = "gemma:2b",
+    ollama_model: str = "gemma3:4b",
     *,
     http_client: httpx.Client | None = None,
     cli_runner=None,
